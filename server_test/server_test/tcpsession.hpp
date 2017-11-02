@@ -197,19 +197,20 @@ bool TcpSession<TSession>::Start()
 template <typename TSession>
 void TcpSession<TSession>::DoWrite(std::string  data)
 {
-	if (socket_.is_open())
+
+	bool write_in_progress = !deq_messages_.empty();
+	deq_messages_.push_back(std::move(data));
+
+	if (!write_in_progress)
 	{
-
-		bool write_in_progress = !deq_messages_.empty();
-		deq_messages_.push_back(std::move(data));
-
-		if (!write_in_progress)
+		if (socket_.is_open())
 		{
 			boost::asio::async_write(socket_,
 				boost::asio::buffer(deq_messages_.front()),
 				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 		}
 	}
+
 }
 
 #ifdef SERVER_HEADER_BODY_MODE
