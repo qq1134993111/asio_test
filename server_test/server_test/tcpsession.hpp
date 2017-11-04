@@ -49,12 +49,53 @@ public:
 	bool Start();
 	bool Send(std::string data)
 	{
-
 		if (!socket_.is_open())
 			return false;
 
-		ios_.post(boost::bind(&TcpSession::DoWrite, this->shared_from_this(), std::move(data)));
+		std::unique_lock<decltype(send_mtx_)> lc(send_mtx_);
+		bool write_in_progress = !deq_messages_.empty();
+		deq_messages_.push_back(std::move(data));
 
+		if (!write_in_progress)
+		{
+			if (socket_.is_open())
+			{
+				boost::asio::async_write(socket_,
+					boost::asio::buffer(deq_messages_.front()),
+					boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
+			}
+
+			/*
+			auto func = [self = this->shared_from_this()]()
+			{
+				if (self->socket_.is_open())
+				{
+					boost::asio::async_write(self->socket_,
+						boost::asio::buffer(self->deq_messages_.front()),
+						boost::bind(&TcpSession::HandleWrite, self, boost::asio::placeholders::error));
+				}
+
+			};
+
+			ios_.post(std::move(func));
+			*/
+
+			/*
+			ios_.post(std::bind([](decltype(this->shared_from_this()) self)
+			{
+
+			if (self->socket_.is_open())
+			{
+			boost::asio::async_write(self->socket_,
+			boost::asio::buffer(self->deq_messages_.front()),
+			boost::bind(&TcpSession::HandleWrite, self, boost::asio::placeholders::error));
+			}
+
+			}, this->shared_from_this()));
+			*/
+		}
+		//ios_.post(boost::bind(&TcpSession::DoWrite, this->shared_from_this(), std::move(data)));
+		//DoWrite(std::move(data));
 		return (true);
 	}
 
@@ -162,6 +203,8 @@ private:
 #endif // SERVER_HEADER_BODY_MODE
 
 	std::deque<std::string> deq_messages_;
+	std::mutex send_mtx_;
+
 
 	boost::asio::steady_timer	check_timer_;
 	std::atomic<uint64_t>		check_recv_timeout_seconds_;
@@ -198,6 +241,7 @@ template <typename TSession>
 void TcpSession<TSession>::DoWrite(std::string  data)
 {
 
+	std::unique_lock<decltype(send_mtx_)> lc(send_mtx_);
 	bool write_in_progress = !deq_messages_.empty();
 	deq_messages_.push_back(std::move(data));
 
@@ -209,6 +253,35 @@ void TcpSession<TSession>::DoWrite(std::string  data)
 				boost::asio::buffer(deq_messages_.front()),
 				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 		}
+		
+		/*
+		auto func = [self = this->shared_from_this()]()
+		{
+			if (self->socket_.is_open())
+			{
+				boost::asio::async_write(self->socket_,
+					boost::asio::buffer(self->deq_messages_.front()),
+					boost::bind(&TcpSession::HandleWrite, self, boost::asio::placeholders::error));
+			}
+
+		};
+
+		ios_.post(std::move(func));
+		*/
+
+		/*
+		ios_.post(std::bind([](decltype(this->shared_from_this()) self) 
+		{
+		
+			if (self->socket_.is_open())
+			{
+				boost::asio::async_write(self->socket_,
+					boost::asio::buffer(self->deq_messages_.front()),
+					boost::bind(&TcpSession::HandleWrite, self, boost::asio::placeholders::error));
+			}
+
+		}, this->shared_from_this()));
+		*/
 	}
 
 }
@@ -291,6 +364,8 @@ void TcpSession<TSession>::HandleWrite(const boost::system::error_code & ec)
 
 	if (!ec)
 	{
+		std::unique_lock<decltype(send_mtx_)> lc(send_mtx_);
+
 		deq_messages_.pop_front();
 
 		if (!deq_messages_.empty())
