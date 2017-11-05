@@ -9,7 +9,10 @@ public:
 	{
 
 	}
-	~EchoSession() {}
+	~EchoSession() 
+	{
+		printf("~EchoSession\n");
+	}
 };
 
 class MyClient :public TcpClient<EchoSession>

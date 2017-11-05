@@ -66,6 +66,11 @@ public:
 	{
 		if (!is_running_)
 		{
+			if (ios_.stopped())
+			{
+				ios_.reset();
+			}
+
 			thread_run_ = std::thread([this]() {
 
 				boost::system::error_code ec;

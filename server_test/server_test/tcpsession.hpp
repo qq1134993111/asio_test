@@ -119,6 +119,8 @@ public:
 
 	void DoConnect(boost::asio::ip::tcp::endpoint & endpoint)
 	{
+		printf("DoConnect\n");
+
 		socket_.async_connect(endpoint,
 			boost::bind(&TcpSession::HandleConnect, this->shared_from_this(), boost::asio::placeholders::error));
 	}
@@ -134,7 +136,7 @@ public:
 	{
 		remote_endpoint_ = endpoint;
 		check_connect_delay_seconds_ = delay_seconds;
-
+		printf("Connect\n");
 		if (check_connect_delay_seconds_ !=0)
 		{
 			ExpiresConnectDelayTimer();
@@ -246,6 +248,8 @@ private:
 		if (check_connect_delay_seconds_ == 0)
 			return;
 
+		printf("ExpiresConnectDelayTimer,check_connect_delay_seconds_:%d\n", check_connect_delay_seconds_.load());
+
 		check_connect_delay_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(check_connect_delay_seconds_));
 		check_connect_delay_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectDelayTimeOut, this->shared_from_this(), boost::asio::placeholders::error));
 	}
@@ -255,6 +259,7 @@ private:
 		if (check_heartbeat_timeout_seconds_ == 0)
 			return;
 
+		printf("ExpiresHeartbeatTimer,check_heartbeat_timeout_seconds_:%d\n", check_heartbeat_timeout_seconds_.load());
 		check_connect_delay_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(check_heartbeat_timeout_seconds_));
 		check_connect_delay_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleHeartbeatTimeOut, this->shared_from_this(), boost::asio::placeholders::error));
 	}
@@ -276,7 +281,7 @@ private:
 
 		//if (!socket_.is_open())
 		//	return;
-
+		printf("HandleConnectDelayTimeOut:%d,%s\n", ec.value(), boost::system::system_error(ec).what());
 		if (!ec)//0 操作成功
 		{
 			DoConnect(remote_endpoint_);
@@ -292,7 +297,7 @@ private:
 
 		//if (!socket_.is_open())
 		//	return;
-
+		printf("HandleHeartbeatTimeOut:%d,%s\n", ec.value(), boost::system::system_error(ec).what());
 		if (!ec)//0 操作成功
 		{
 			if (deq_messages_.empty())
