@@ -145,14 +145,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="server_test.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="ioservicepool.hpp" />
     <ClInclude Include="sessionmanager.hpp" />
+    <ClInclude Include="tcpclient.hpp" />
     <ClInclude Include="tcpserver.hpp" />
     <ClInclude Include="tcpsession.hpp" />
     <ClInclude Include="tcpsessioncallback.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="client_test.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
