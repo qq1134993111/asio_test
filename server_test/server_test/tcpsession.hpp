@@ -58,9 +58,20 @@ public:
 		return (true);
 	}
 
-	void SetRecvTimeOut(uint64_t check_recv_timeout_seconds)
+	void SetRecvTimeOut(uint64_t check_recv_timeout_seconds, bool immediately = false)
 	{
 		check_recv_timeout_seconds_ = check_recv_timeout_seconds;
+
+		if (check_recv_timeout_seconds_ == 0)
+		{
+			CancelRecvTimer();
+		}
+
+		if (immediately)
+		{
+			ExpiresRecvTimer();
+		}
+
 	}
 
 	void DispatchClose()
@@ -105,14 +116,13 @@ protected:
 				boost::asio::placeholders::error,
 				boost::asio::placeholders::bytes_transferred));
 
-		ExpiresTimer();
+		ExpiresRecvTimer();
 	}
 
 	void HandleReadSome(const boost::system::error_code & ec, std::size_t bytes_transferred)
 	{
 		if (!ec)
 		{
-			CancelTimer();
 			recv_buffer_.SetWritePos(recv_buffer_.GetWritePos() + bytes_transferred);
 			fnrecv_(this->shared_from_this(), recv_buffer_);
 			ReadSome();
@@ -123,7 +133,7 @@ protected:
 
 			//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-			Close();
+			Close(ec);
 
 		}
 	}
@@ -132,9 +142,11 @@ protected:
 
 	void DoWrite(std::string  data);
 	void HandleWrite(const boost::system::error_code & ec);
-	void ExpiresTimer();
-	void CancelTimer();
-	void HandleTimeOut(boost::system::error_code const& error);
+
+	void ExpiresRecvTimer();
+	void CancelRecvTimer();
+	void HandleRecvTimeOut(boost::system::error_code const& error);
+
 	void Close(const boost::system::error_code& ec = boost::asio::error::eof);
 	void DoDispatchClose()
 	{
@@ -223,7 +235,7 @@ void TcpSession<TSession>::ReadHeader()
 		boost::bind(&TcpSession::HandleReadHeader, this->shared_from_this(), boost::asio::placeholders::error));
 
 
-	ExpiresTimer();
+	ExpiresRecvTimer();
 
 }
 
@@ -239,7 +251,7 @@ void TcpSession<TSession>::ReadBody()
 	boost::asio::async_read(socket_, boost::asio::buffer(body_), boost::asio::transfer_at_least(size),
 		boost::bind(&TcpSession::HandleReadBody, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 
-	ExpiresTimer();
+	ExpiresRecvTimer();
 
 }
 
@@ -248,14 +260,13 @@ void TcpSession<TSession>::HandleReadHeader(const boost::system::error_code & ec
 {
 	if (!ec)
 	{
-		CancelTimer();
 		ReadBody();
 	}
 	else
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		Close();
+		Close(ec);
 	}
 }
 
@@ -265,8 +276,6 @@ void TcpSession<TSession>::HandleReadBody(const boost::system::error_code & ec)
 
 	if (!ec)
 	{
-		CancelTimer();
-
 		assert(fnmessage_);
 		fnmessage_(std::enable_shared_from_this<TSession>::shared_from_this(), header_, body_);
 
@@ -275,7 +284,7 @@ void TcpSession<TSession>::HandleReadBody(const boost::system::error_code & ec)
 	else
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
-		Close();
+		Close(ec);
 	}
 }
 #else
@@ -306,33 +315,30 @@ void TcpSession<TSession>::HandleWrite(const boost::system::error_code & ec)
 
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		Close();
+		Close(ec);
 	}
 }
 
 template <typename TSession>
-void TcpSession<TSession>::ExpiresTimer()
+void TcpSession<TSession>::ExpiresRecvTimer()
 {
 	if (check_recv_timeout_seconds_ == 0)
 		return;
 
 	check_timer_.expires_from_now(std::chrono::seconds(check_recv_timeout_seconds_));
-	check_timer_.async_wait(boost::bind(&TcpSession::HandleTimeOut, this->shared_from_this(), boost::asio::placeholders::error));
+	check_timer_.async_wait(boost::bind(&TcpSession::HandleRecvTimeOut, this->shared_from_this(), boost::asio::placeholders::error));
 }
 
 template <typename TSession>
-void TcpSession<TSession>::CancelTimer()
+void TcpSession<TSession>::CancelRecvTimer()
 {
-	if (check_recv_timeout_seconds_ == 0)
-		return;
-
 	boost::system::error_code	ignored_ec;
 	size_t				size = check_timer_.cancel(ignored_ec);
-	printf("check_timer_ %d canceled\n", size);
+	printf("CancelRecvTimer %d canceled,%d,%s\n", size, ignored_ec.value(), boost::system::system_error(ignored_ec).what());
 }
 
 template <typename TSession>
-void TcpSession<TSession>::HandleTimeOut(boost::system::error_code const & error)
+void TcpSession<TSession>::HandleRecvTimeOut(boost::system::error_code const & ec)
 {
 	//if (ec == boost::asio::error::operation_aborted) /*重设/取消 */
 	//{
@@ -342,14 +348,15 @@ void TcpSession<TSession>::HandleTimeOut(boost::system::error_code const & error
 	//if (!socket_.is_open())
 	//	return;
 
-	if (!error)
+	if (!ec)//0 操作成功
 	{
+
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, error.value(), boost::system::system_error(error).what());
 
-		boost::system::error_code ec = boost::asio::error::timed_out;
+		//boost::system::error_code ec = boost::asio::error::timed_out;
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		Close();
+		Close(boost::asio::error::timed_out);
 	}
 }
 
