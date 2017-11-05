@@ -89,8 +89,8 @@ public:
 	boost::asio::io_service& GetIoService() { return ios_; }
 	uint64_t GetSessionID() { return sessionid_; }
 
-	boost::asio::ip::tcp::endpoint GetLocalEndpoint() const { return local_endpoint_; }
-	boost::asio::ip::tcp::endpoint GetRemoteEndpoint() const { return remote_endpoint_; }
+	const boost::asio::ip::tcp::endpoint& GetLocalEndpoint() const { return local_endpoint_; }
+	const boost::asio::ip::tcp::endpoint& GetRemoteEndpoint() const { return remote_endpoint_; }
 
 protected:
 	void SetSocketNoDelay()
