@@ -93,7 +93,7 @@ public:
 	boost::asio::ip::tcp::endpoint GetRemoteEndpoint() const { return remote_endpoint_; }
 
 protected:
-	void SetNoDelay()
+	void SetSocketNoDelay()
 	{
 		boost::asio::ip::tcp::no_delay option(true);
 		boost::system::error_code ec;
@@ -190,7 +190,7 @@ TcpSession<TSession>::~TcpSession()
 template <typename TSession>
 bool TcpSession<TSession>::Start()
 {
-	SetNoDelay();
+	SetSocketNoDelay();
 	local_endpoint_ = socket_.local_endpoint();
 	remote_endpoint_ = socket_.remote_endpoint();
 
