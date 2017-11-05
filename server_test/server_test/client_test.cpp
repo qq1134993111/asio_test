@@ -9,7 +9,7 @@ public:
 	{
 
 	}
-	~EchoSession() 
+	~EchoSession()
 	{
 		printf("~EchoSession\n");
 	}
@@ -21,9 +21,9 @@ public:
 	MyClient() :TcpClient() {}
 	~MyClient() {};
 
-	virtual void OnConnectFailure(std::shared_ptr<EchoSession> spsession)
+	virtual void OnConnectFailure(std::shared_ptr<EchoSession> spsession, boost::system::error_code const& ec)
 	{
-		TcpClient::OnConnectFailure(spsession);
+		TcpClient::OnConnectFailure(spsession, ec);
 
 		spsession->Connect((boost::asio::ip::tcp::endpoint)spsession->GetRemoteEndpoint(), 10);
 

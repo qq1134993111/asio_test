@@ -34,7 +34,7 @@ public:
 
 public:
 
-	void SetConnectCallback(ConnectCallback<TSession> fnconnect) 
+	void SetConnectCallback(ConnectCallback<TSession> fnconnect)
 	{
 		fnconnect_ = std::move(fnconnect);
 	}
@@ -85,7 +85,7 @@ public:
 		}
 
 	}
-	void SetHeartbeat(std::string strInfo,uint32_t check_heartbeat_timeout_seconds=0)
+	void SetHeartbeat(std::string strInfo, uint32_t check_heartbeat_timeout_seconds = 0)
 	{
 		send_heartbeat_info_ = std::move(strInfo);
 		check_heartbeat_timeout_seconds_ = check_heartbeat_timeout_seconds;
@@ -125,11 +125,11 @@ public:
 			boost::bind(&TcpSession::HandleConnect, this->shared_from_this(), boost::asio::placeholders::error));
 	}
 
-	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds= 0)
+	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds = 0)
 	{
 		boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip), port);
 
-		return Connect(endpoint,delay_seconds);
+		return Connect(endpoint, delay_seconds);
 	}
 
 	bool Connect(boost::asio::ip::tcp::endpoint & endpoint, uint32_t delay_seconds = 0)
@@ -137,7 +137,7 @@ public:
 		remote_endpoint_ = endpoint;
 		check_connect_delay_seconds_ = delay_seconds;
 		printf("Connect\n");
-		if (check_connect_delay_seconds_ !=0)
+		if (check_connect_delay_seconds_ != 0)
 		{
 			ExpiresConnectDelayTimer();
 		}
@@ -176,8 +176,8 @@ protected:
 		else
 		{
 			//error
-			assert(fnconnectfailure_!=nullptr);
-			fnconnectfailure_(this->shared_from_this());
+			assert(fnconnectfailure_ != nullptr);
+			fnconnectfailure_(this->shared_from_this(), ec);
 		}
 	}
 
