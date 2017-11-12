@@ -15,27 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="sessionmanager.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="tcpsessioncallback.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="ioservicepool.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="tcpserver.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="tcpsession.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="tcpclient.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="client_test.cpp">
+    <ClCompile Include="test_client.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

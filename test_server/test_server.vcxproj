@@ -20,9 +20,10 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{60FA78D5-372D-4538-98F8-B1DE13A7EB99}</ProjectGuid>
+    <ProjectGuid>{753CF6D7-B2E3-4420-BAAB-819D037E23AB}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>servertest</RootNamespace>
+    <RootNamespace>testserver</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,11 +72,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\VCPRO\BOOST\lib;D:\VCPRO\BOOST\include;$(IncludePath)</IncludePath>
+    <IncludePath>D:\VCPRO\BOOST\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\VCPRO\BOOST\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>D:\VCPRO\BOOST\include;$(IncludePath)</IncludePath>
+    <LibraryPath>D:\VCPRO\BOOST\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -90,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>D:\VCPRO\asio_test\databuffer;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>D:\VCPRO\asio_test\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,6 +107,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>D:\VCPRO\asio_test\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,15 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ioservicepool.hpp" />
-    <ClInclude Include="sessionmanager.hpp" />
-    <ClInclude Include="tcpclient.hpp" />
-    <ClInclude Include="tcpserver.hpp" />
-    <ClInclude Include="tcpsession.hpp" />
-    <ClInclude Include="tcpsessioncallback.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="client_test.cpp" />
+    <ClCompile Include="test_server.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
