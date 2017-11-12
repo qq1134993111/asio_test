@@ -7,6 +7,16 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_server", "test_server\
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_client", "test_client\test_client.vcxproj", "{AA1878B0-C912-4BB8-AA8A-D627EFFE4151}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1C6681A8-E023-47A0-8FFD-CE1B37E3ED25}"
+	ProjectSection(SolutionItems) = preProject
+		include\net\ioservicepool.hpp = include\net\ioservicepool.hpp
+		include\net\sessionmanager.hpp = include\net\sessionmanager.hpp
+		include\net\tcpclient.hpp = include\net\tcpclient.hpp
+		include\net\tcpserver.hpp = include\net\tcpserver.hpp
+		include\net\tcpsession.hpp = include\net\tcpsession.hpp
+		include\net\tcpsessioncallback.h = include\net\tcpsessioncallback.h
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

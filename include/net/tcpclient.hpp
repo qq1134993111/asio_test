@@ -41,7 +41,13 @@ public:
 		session_mng_.Remove(spsession->GetSessionID());
 	};
 
+#ifdef 	  SERVER_HEADER_BODY_MODE
+	virtual uint32_t OnGetHeaderLength() = 0;
+	virtual size_t OnGetBodyLength(std::vector<uint8_t>& header) = 0;
+	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
+#else
 	virtual void OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
+#endif // 
 
 public:
 	std::shared_ptr<TSession> Connect(std::string ip, uint16_t port, uint32_t delay_seconds = 0)
@@ -53,7 +59,13 @@ public:
 
 		new_session->SetConnectFailureCallback(std::bind(&TcpClient::OnConnectFailure, this, std::placeholders::_1, std::placeholders::_2));
 
+#if SERVER_HEADER_BODY_MODE
+		new_session->SetMessageLengthCallback(std::bind(&TcpClient::OnGetHeaderLength, this), std::bind(&TcpClient::OnGetBodyLength, this, std::placeholders::_1));
+		new_session->SetMessageCallback(std::bind(&TcpClient::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
+#else
 		new_session->SetRecvCallback(std::bind(&TcpClient::OnRecv, this, std::placeholders::_1, std::placeholders::_2));
+#endif
+
 		new_session->SetCloseCallback(std::bind(&TcpClient::OnClose, this, std::placeholders::_1, std::placeholders::_2));
 
 		new_session->Connect(ip, port, delay_seconds);

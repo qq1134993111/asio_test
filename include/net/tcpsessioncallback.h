@@ -23,9 +23,9 @@ template <typename TSession>
 using RecvCallback = std::function<void(TcpSessionPtr<TSession> sesionptr, DataBuffer& recv_data)>;
 
 using HeaderLengthCallback = std::function<uint32_t()>;
-using BodyLengthCallback = std::function<size_t(const std::vector<uint8_t>& header)>;
+using BodyLengthCallback = std::function<size_t(std::vector<uint8_t>& header)>;
 
 template <typename TSession>
-using MessageCallback = std::function<void(const TcpSessionPtr<TSession>& sesionptr, const std::vector<uint8_t>& header, const std::vector<uint8_t>& body)>;
+using MessageCallback = std::function<void(const TcpSessionPtr<TSession>& sesionptr, std::vector<uint8_t>& header, std::vector<uint8_t>& body)>;
 using PackageLengthCallback = std::function< int32_t(uint8_t* pdata, uint32_t len)>;
 
