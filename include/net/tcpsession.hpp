@@ -460,11 +460,11 @@ void TcpSession<TSession>::Shutdown()
 }
 
 template <typename TSession>
-void TcpSession<TSession>::DoSetHeartbeat(std::string strInfo, uint32_t check_heartbeat_timeout_seconds /*= 0*/)
+void TcpSession<TSession>::DoSetHeartbeat(std::string strInfo, uint32_t heartbeat_intervals_seconds /*= 0*/)
 {
 	send_heartbeat_info_ = std::move(strInfo);
-	check_heartbeat_intervals_seconds_ = check_heartbeat_timeout_seconds;
-	if (check_heartbeat_timeout_seconds != 0)
+	heartbeat_intervals_seconds_ = heartbeat_intervals_seconds;
+	if (heartbeat_intervals_seconds != 0)
 	{
 		ExpiresHeartbeatTimer();
 	}
