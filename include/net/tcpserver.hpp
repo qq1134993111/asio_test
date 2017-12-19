@@ -50,7 +50,7 @@ public:
 	virtual size_t OnGetBodyLength(std::vector<uint8_t>& header) = 0;
 	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
 #else
-	virtual void OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
+	virtual uint32_t OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
 #endif // 
 
 	virtual void OnAcceptFailed(boost::system::error_code const& ec)
@@ -113,11 +113,10 @@ void TcpServer<TSession >::DoAccept()
 #else
 			new_session->SetRecvCallback(std::bind(&TcpServer::OnRecv, this, std::placeholders::_1, std::placeholders::_2));
 #endif 
+			new_session->SetConnectCallback(std::bind(&TcpServer::OnConnect, this, std::placeholders::_1));
 			new_session->SetCloseCallback(std::bind(&TcpServer::OnClose, this, std::placeholders::_1, std::placeholders::_2));
 
 			new_session->Start();
-
-			OnConnect(new_session);
 		}
 		else
 		{

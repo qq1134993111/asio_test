@@ -20,7 +20,7 @@ template <typename TSession>
 using CloseCallback = std::function<void(TcpSessionPtr<TSession> sesionptr, const boost::system::error_code& ec)>;
 
 template <typename TSession>
-using RecvCallback = std::function<void(TcpSessionPtr<TSession> sesionptr, DataBuffer& recv_data)>;
+using RecvCallback = std::function<uint32_t(TcpSessionPtr<TSession> sesionptr, DataBuffer& recv_data)>;
 
 using HeaderLengthCallback = std::function<uint32_t()>;
 using BodyLengthCallback = std::function<size_t(std::vector<uint8_t>& header)>;

@@ -46,7 +46,7 @@ public:
 	virtual size_t OnGetBodyLength(std::vector<uint8_t>& header) = 0;
 	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
 #else
-	virtual void OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
+	virtual uint32_t OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
 #endif // 
 
 public:
