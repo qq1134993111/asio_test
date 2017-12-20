@@ -15,21 +15,15 @@ public:
 	class IosWorker
 	{
 	public:
-		IosWorker(std::size_t concurrency_hint = 1)
-			: ios_(concurrency_hint)
-			, concurrency_hint_(concurrency_hint)
-			, workers_()
-			, work_(/*std::make_unique<boost::asio::io_service::work>(ios_)*/new boost::asio::io_service::work(ios_))
+		IosWorker()
+			: ios_()
+			, worker_()
+			, work_(std::make_unique<boost::asio::io_service::work>(ios_))
 		{}
 
 		void Start()
 		{
-
-			for (size_t i = 0; i < concurrency_hint_; i++)
-			{
-				workers_.emplace_back(std::bind(&IosWorker::Run, this));
-			}
-
+			worker_ = boost::thread(std::bind(&IosWorker::Run, this));
 		}
 
 		void Stop()
@@ -41,11 +35,10 @@ public:
 
 		void Wait()
 		{
-			for (auto &w : workers_)
-			{
-				if (w.joinable())
-					w.join();
-			}
+
+			if (worker_.joinable())
+				worker_.join();
+
 		}
 
 		boost::asio::io_service& GetIoService()
@@ -61,11 +54,11 @@ public:
 		};
 
 		boost::asio::io_service ios_;
-		size_t  concurrency_hint_;
-		std::vector<std::thread>	workers_;
+		boost::thread  worker_;
 		ios_work_ptr	work_;
 
 	};
+
 	using iterator = std::list<IosWorker>::iterator;
 public:
 	explicit IoServicePool(size_t pool_size = std::thread::hardware_concurrency())
