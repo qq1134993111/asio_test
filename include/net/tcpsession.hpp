@@ -20,7 +20,7 @@ class TcpSession : public std::enable_shared_from_this<TSession>, boost::noncopy
 {
 public:
 	TcpSession(boost::asio::io_service& ios, uint64_t sessionid, uint32_t check_recv_timeout_seconds = 0)
-		:ios_(ios), socket_(ios_), sessionid_(sessionid), check_connect_delay_and_heartbeat_timer_(ios_), check_recv_timeout_timer_(ios_), check_speed_limit_timer_(ios_), recv_timeout_seconds_(check_recv_timeout_seconds)
+		:ios_(ios), socket_(ios_), sessionid_(sessionid), check_connect_delay_and_connect_timeout_and_heartbeat_timer_(ios_), check_recv_timeout_timer_(ios_), check_speed_limit_timer_(ios_), recv_timeout_seconds_(check_recv_timeout_seconds)
 		, connect_delay_seconds_(0), heartbeat_intervals_seconds_(0), status_(SessionStatus::kInit)
 	{
 
@@ -66,7 +66,7 @@ public:
 	bool SetSendSpeedLimit(uint32_t speed_bytes);
 	uint32_t GetRealTimeSpeed();
 
-	void Shutdown(const boost::asio::socket_base::shutdown_type& what = boost::asio::ip::tcp::socket::shutdown_both, bool post=false);
+	void Shutdown(const boost::asio::socket_base::shutdown_type& what = boost::asio::ip::tcp::socket::shutdown_both, bool post = false);
 
 	bool IsConnect();
 
@@ -80,9 +80,9 @@ public:
 	const boost::asio::ip::tcp::endpoint& GetRemoteEndpoint() const { return remote_endpoint_; }
 
 
-	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds = 0);
+	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
 
-	bool Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds = 0);
+	bool Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
 
 protected:
 	void SetSocketNoDelay();
@@ -100,12 +100,14 @@ protected:
 	void CancelRecvTimer();
 	void HandleRecvTimer(boost::system::error_code const& error);
 
-	void DoShutdown(const boost::asio::socket_base::shutdown_type& what= boost::asio::ip::tcp::socket::shutdown_both,const boost::system::error_code& ec = boost::asio::error::operation_aborted);
+	void DoShutdown(const boost::asio::socket_base::shutdown_type& what = boost::asio::ip::tcp::socket::shutdown_both, const boost::system::error_code& ec = boost::asio::error::operation_aborted);
 
 	void ExpiresConnectDelayTimer();
+	void ExpiresConnectTimeoutTimer();
 	void ExpiresHeartbeatTimer();
 	void CancelConnectDelayAndHeartbeatTimer();
 	void HandleConnectDelayTimer(boost::system::error_code const & ec);
+	void HandleConnectTimeoutTimer(boost::system::error_code const & ec);
 	void HandleHeartbeatTimer(boost::system::error_code const & ec);
 
 
@@ -132,9 +134,9 @@ protected:
 		kShuttingdown
 	};
 
-	enum class HandleResult:uint32_t
+	enum class HandleResult :uint32_t
 	{
-	    kHandleSuccess=0,
+		kHandleSuccess = 0,
 		kHandleContinue,
 		kHandlePause,
 		kHandleError
@@ -149,8 +151,9 @@ private:
 	boost::asio::ip::tcp::endpoint local_endpoint_;
 	boost::asio::ip::tcp::endpoint remote_endpoint_;
 
-	boost::asio::steady_timer	check_connect_delay_and_heartbeat_timer_;
+	boost::asio::steady_timer	check_connect_delay_and_connect_timeout_and_heartbeat_timer_;
 	std::atomic<uint32_t>		connect_delay_seconds_;
+	std::atomic<uint32_t>       connect_timeout_seconds_;
 	std::atomic<uint32_t>		heartbeat_intervals_seconds_;
 	std::string  send_heartbeat_info_;
 
@@ -187,6 +190,8 @@ private:
 
 	CloseCallback<TSession> fnclose_;
 };
+
+
 
 template <typename TSession>
 void TcpSession<TSession>::WriteCheckSpeedLimit()
@@ -290,15 +295,15 @@ bool TcpSession<TSession>::SetSendSpeedLimit(uint32_t speed_bytes)
 template <typename TSession>
 void TcpSession<TSession>::HandleHeartbeatTimer(boost::system::error_code const & ec)
 {
-	//if (ec == boost::asio::error::operation_aborted) /*重设/取消 */
+	//if (ec == boost::asio::error::operation_aborted) /*閲嶈/鍙栨秷 */
 	//{
 	//	return;
 	//}
 
 	//if (!socket_.is_open())
 	//	return;
-	printf("HandleHeartbeatTimeOut:%d,%s\n", ec.value(), boost::system::system_error(ec).what());
-	if (!ec)//0 操作成功
+	printf("FILE:%s,FUNCTION:%s,LINE:%d, %d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+	if (!ec)//0 鎿嶄綔鎴愬姛
 	{
 		if (1)
 		{
@@ -329,17 +334,30 @@ void TcpSession<TSession>::HandleHeartbeatTimer(boost::system::error_code const 
 template <typename TSession>
 void TcpSession<TSession>::HandleConnectDelayTimer(boost::system::error_code const & ec)
 {
-	//if (ec == boost::asio::error::operation_aborted) /*重设/取消 */
+	//if (ec == boost::asio::error::operation_aborted) /*閲嶈/鍙栨秷 */
 	//{
 	//	return;
 	//}
 
 	//if (!socket_.is_open())
 	//	return;
-	printf("HandleConnectDelayTimeOut:%d,%s\n", ec.value(), boost::system::system_error(ec).what());
-	if (!ec)//0 操作成功
+	printf("FILE:%s,FUNCTION:%s,LINE:%d,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+	if (!ec)//0 鎿嶄綔鎴愬姛
 	{
 		DoConnect(remote_endpoint_);
+	}
+}
+
+
+
+template <typename TSession>
+void TcpSession<TSession>::HandleConnectTimeoutTimer(boost::system::error_code const & ec)
+{
+	printf("FILE:%s,FUNCTION:%s,LINE:%d,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+	if (!ec)//0 鎿嶄綔鎴愬姛
+	{
+		boost::system::error_code	ignored_ec;
+		socket_.cancel(ignored_ec);
 	}
 }
 
@@ -347,7 +365,7 @@ template <typename TSession>
 void TcpSession<TSession>::CancelConnectDelayAndHeartbeatTimer()
 {
 	boost::system::error_code	ignored_ec;
-	size_t				size = check_connect_delay_and_heartbeat_timer_.cancel(ignored_ec);
+	size_t				size = check_connect_delay_and_connect_timeout_and_heartbeat_timer_.cancel(ignored_ec);
 
 	printf("FILE:%s,FUNCTION:%s,LINE:%d, %d canceled,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, size, ignored_ec.value(), boost::system::system_error(ignored_ec).what());
 
@@ -364,8 +382,8 @@ void TcpSession<TSession>::ExpiresHeartbeatTimer()
 
 		printf("FILE:%s,FUNCTION:%s,LINE:%d,heartbeat_intervals_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, heartbeat_intervals_seconds_.load());
 
-		check_connect_delay_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(heartbeat_intervals_seconds_));
-		check_connect_delay_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleHeartbeatTimer, this->shared_from_this(), boost::asio::placeholders::error));
+		check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(heartbeat_intervals_seconds_));
+		check_connect_delay_and_connect_timeout_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleHeartbeatTimer, this->shared_from_this(), boost::asio::placeholders::error));
 	}
 
 }
@@ -375,7 +393,8 @@ void TcpSession<TSession>::ExpiresConnectDelayTimer()
 {
 	if (socket_.is_open())
 	{
-		socket_.close();
+		boost::system::error_code	ignored_ec;
+		socket_.close(ignored_ec);
 	}
 
 	if (connect_delay_seconds_ == 0)
@@ -383,11 +402,19 @@ void TcpSession<TSession>::ExpiresConnectDelayTimer()
 
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,check_connect_delay_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_delay_seconds_.load());
 
-	check_connect_delay_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_delay_seconds_));
-	check_connect_delay_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectDelayTimer, this->shared_from_this(), boost::asio::placeholders::error));
+	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_delay_seconds_));
+	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectDelayTimer, this->shared_from_this(), boost::asio::placeholders::error));
 
 }
 
+template <typename TSession>
+void TcpSession<TSession>::ExpiresConnectTimeoutTimer()
+{
+	printf("FILE:%s,FUNCTION:%s,LINE:%d,check_connect_delay_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_timeout_seconds_.load());
+
+	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_timeout_seconds_));
+	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectTimeoutTimer, this->shared_from_this(), boost::asio::placeholders::error));
+}
 
 
 template <typename TSession>
@@ -414,13 +441,13 @@ void TcpSession<TSession>::SetSocketNoDelay()
 }
 
 template <typename TSession>
-bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds /*= 0*/)
+bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds /*= 0*/, uint32_t connect_timeout_seconds /*= 0*/)
 {
 	status_ = SessionStatus::kConnecting;
 
 	remote_endpoint_ = connect_endpoint;
 	connect_delay_seconds_ = delay_seconds;
-
+	connect_timeout_seconds_ = connect_timeout_seconds;
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,%s:%d,delay_seconds:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_endpoint.address().to_string().c_str(), connect_endpoint.port(), delay_seconds);
 
 	if (connect_delay_seconds_ != 0)
@@ -436,11 +463,11 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 }
 
 template <typename TSession>
-bool TcpSession<TSession>::Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds /*= 0*/)
+bool TcpSession<TSession>::Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds /*= 0*/, uint32_t connect_timeout_seconds /*= 0*/)
 {
 	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(ip), port);
 
-	return Connect(endpoint, delay_seconds);
+	return Connect(endpoint, delay_seconds, connect_timeout_seconds);
 }
 
 template <typename TSession>
@@ -450,6 +477,12 @@ void TcpSession<TSession>::DoConnect(boost::asio::ip::tcp::endpoint & connect_en
 
 	socket_.async_connect(connect_endpoint,
 		boost::bind(&TcpSession::HandleConnect, this->shared_from_this(), boost::asio::placeholders::error));
+
+	if (connect_timeout_seconds_ != 0)
+	{
+		ExpiresConnectTimeoutTimer();
+	}
+
 }
 
 template <typename TSession>
@@ -593,7 +626,7 @@ bool TcpSession<TSession>::Start()
 		socket_.close(ignored_ec);
 		return false;
 	}
-	
+
 
 	assert(fnconnect_ != nullptr);
 	fnconnect_(this->shared_from_this());
@@ -676,7 +709,7 @@ void TcpSession<TSession>::HandleReadHeader(const boost::system::error_code & ec
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
+		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 	}
 }
 
@@ -694,8 +727,8 @@ void TcpSession<TSession>::HandleReadBody(const boost::system::error_code & ec)
 	else
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
-		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
-	}
+		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+}
 }
 
 
@@ -715,8 +748,8 @@ void TcpSession<TSession>::HandleReadSome(const boost::system::error_code & ec, 
 	if (!ec)
 	{
 		recv_buffer_.SetWritePos(recv_buffer_.GetWritePos() + bytes_transferred);
-		auto r=fnrecv_(this->shared_from_this(), recv_buffer_);
-		if (r==(uint32_t)HandleResult::kHandleSuccess||r==(uint32_t)HandleResult::kHandleContinue)
+		auto r = fnrecv_(this->shared_from_this(), recv_buffer_);
+		if (r == (uint32_t)HandleResult::kHandleSuccess || r == (uint32_t)HandleResult::kHandleContinue)
 		{
 			ReadSome();
 		}
@@ -725,7 +758,7 @@ void TcpSession<TSession>::HandleReadSome(const boost::system::error_code & ec, 
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
+		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 	}
 }
 
@@ -789,7 +822,7 @@ void TcpSession<TSession>::HandleWrite(const boost::system::error_code & ec)
 
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both,ec);
+		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
 	}
 }
 
@@ -821,7 +854,7 @@ void TcpSession<TSession>::CancelRecvTimer()
 template <typename TSession>
 void TcpSession<TSession>::HandleRecvTimer(boost::system::error_code const & ec)
 {
-	//if (ec == boost::asio::error::operation_aborted) /*重设/取消 */
+	//if (ec == boost::asio::error::operation_aborted) /*閲嶈/鍙栨秷 */
 	//{
 	//	return;
 	//}
@@ -829,7 +862,7 @@ void TcpSession<TSession>::HandleRecvTimer(boost::system::error_code const & ec)
 	//if (!socket_.is_open())
 	//	return;
 
-	if (!ec)//0 操作成功
+	if (!ec)//0 鎿嶄綔鎴愬姛
 	{
 
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, error.value(), boost::system::system_error(error).what());
@@ -837,12 +870,12 @@ void TcpSession<TSession>::HandleRecvTimer(boost::system::error_code const & ec)
 		//boost::system::error_code ec = boost::asio::error::timed_out;
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
-		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both,boost::asio::error::timed_out);
+		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, boost::asio::error::timed_out);
 	}
 }
 
 template <typename TSession>
-void TcpSession<TSession>::DoShutdown(const boost::asio::socket_base::shutdown_type& what,const boost::system::error_code& ec)
+void TcpSession<TSession>::DoShutdown(const boost::asio::socket_base::shutdown_type& what, const boost::system::error_code& ec)
 {
 	std::unique_lock<std::mutex>  lc(send_mtx_);
 
