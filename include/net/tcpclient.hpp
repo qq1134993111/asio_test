@@ -50,7 +50,7 @@ public:
 #endif // 
 
 public:
-	std::shared_ptr<TSession> Connect(std::string ip, uint16_t port, uint32_t delay_seconds = 0)
+	std::shared_ptr<TSession> Connect(std::string ip, uint16_t port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
 	{
 		auto new_session = std::make_shared<TSession>(ios_, ++id_);
 
@@ -68,7 +68,7 @@ public:
 
 		new_session->SetCloseCallback(std::bind(&TcpClient::OnClose, this, std::placeholders::_1, std::placeholders::_2));
 
-		new_session->Connect(ip, port, delay_seconds);
+		new_session->Connect(ip, port, delay_seconds, connect_timeout_seconds);
 
 		return new_session;
 

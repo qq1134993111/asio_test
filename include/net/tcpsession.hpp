@@ -20,15 +20,10 @@ class TcpSession : public std::enable_shared_from_this<TSession>, boost::noncopy
 {
 public:
 	TcpSession(boost::asio::io_service& ios, uint64_t sessionid, uint32_t check_recv_timeout_seconds = 0)
-		:ios_(ios), socket_(ios_), sessionid_(sessionid), check_connect_delay_and_connect_timeout_and_heartbeat_timer_(ios_), check_recv_timeout_timer_(ios_), check_speed_limit_timer_(ios_), recv_timeout_seconds_(check_recv_timeout_seconds)
+		:ios_(ios), socket_(ios_), sessionid_(sessionid), check_connect_delay_and_connect_timeout_and_heartbeat_timer_(ios_), check_recv_timeout_timer_(ios_), recv_timeout_seconds_(check_recv_timeout_seconds)
 		, connect_delay_seconds_(0), heartbeat_intervals_seconds_(0), status_(SessionStatus::kInit)
 	{
 
-
-		speed_bytes_ = 0;
-		sent_bytes_ = 0;
-		str_send_part_.clear();
-		real_time_speed_ = 0;
 
 #ifdef SERVER_HEADER_BODY_MODE
 
@@ -178,12 +173,6 @@ private:
 	std::deque<std::string> deq_messages_;
 	std::mutex send_mtx_;
 
-	boost::asio::steady_timer	check_speed_limit_timer_;
-	uint32_t    speed_bytes_;
-	uint32_t	sent_bytes_;
-	std::string str_send_part_;
-	std::atomic<uint32_t>    real_time_speed_;
-
 
 	boost::asio::steady_timer	check_recv_timeout_timer_;
 	std::atomic<uint32_t>		recv_timeout_seconds_;
@@ -193,36 +182,6 @@ private:
 
 
 
-template <typename TSession>
-void TcpSession<TSession>::WriteCheckSpeedLimit()
-{
-	str_send_part_.clear();
-
-	if (!deq_messages_.empty() && IsConnect())
-	{
-		if (sent_bytes_ + deq_messages_.front().size() <= speed_bytes_)
-		{
-			boost::asio::async_write(socket_,
-				boost::asio::buffer(deq_messages_.front()),
-				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
-		}
-		else
-		{
-			auto need_send_size = speed_bytes_ - sent_bytes_;
-
-			str_send_part_ = deq_messages_.front().substr(0, need_send_size);
-			deq_messages_.front() = deq_messages_.front().substr(need_send_size);
-
-
-			boost::asio::async_write(socket_,
-				boost::asio::buffer(str_send_part_),
-				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
-
-		}
-
-
-	}
-}
 
 template <typename TSession>
 uint32_t TcpSession<TSession>::GetRealTimeSpeed()
@@ -249,14 +208,6 @@ void TcpSession<TSession>::HandleSpeedLimitTimer(boost::system::error_code const
 	}
 }
 
-template <typename TSession>
-void TcpSession<TSession>::CancelSpeedLimitTimer()
-{
-	boost::system::error_code	ignored_ec;
-	size_t				size = check_speed_limit_timer_.cancel(ignored_ec);
-
-	printf("FILE:%s,FUNCTION:%s,LINE:%d, %d canceled,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, size, ignored_ec.value(), boost::system::system_error(ignored_ec).what());
-}
 
 template <typename TSession>
 void TcpSession<TSession>::ExpiresSpeedLimitTimer()
@@ -267,30 +218,7 @@ void TcpSession<TSession>::ExpiresSpeedLimitTimer()
 	check_speed_limit_timer_.async_wait(boost::bind(&TcpSession::HandleSpeedLimitTimer, this->shared_from_this(), boost::asio::placeholders::error));
 }
 
-template <typename TSession>
-bool TcpSession<TSession>::SetSendSpeedLimit(uint32_t speed_bytes)
-{
-	std::unique_lock<std::mutex>  lc(send_mtx_);
 
-	if (IsConnect())
-	{
-		speed_bytes_ = speed_bytes;
-		sent_bytes_ = 0;
-
-		if (speed_bytes_ == 0)
-		{
-			CancelSpeedLimitTimer();
-		}
-		else
-		{
-			ExpiresSpeedLimitTimer();
-		}
-
-		return true;
-	}
-
-	return false;
-}
 
 template <typename TSession>
 void TcpSession<TSession>::HandleHeartbeatTimer(boost::system::error_code const & ec)
@@ -311,19 +239,13 @@ void TcpSession<TSession>::HandleHeartbeatTimer(boost::system::error_code const 
 
 			if (deq_messages_.empty())
 			{
-				if (speed_bytes_ == 0)
-				{
-					deq_messages_.push_back(send_heartbeat_info_);
 
-					boost::asio::async_write(socket_,
-						boost::asio::buffer(deq_messages_.front()),
-						boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
-				}
-				else
-				{
-					deq_messages_.push_back(send_heartbeat_info_);
-					WriteCheckSpeedLimit();
-				}
+				deq_messages_.push_back(send_heartbeat_info_);
+
+				boost::asio::async_write(socket_,
+					boost::asio::buffer(deq_messages_.front()),
+					boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
+
 			}
 		}
 
@@ -400,7 +322,7 @@ void TcpSession<TSession>::ExpiresConnectDelayTimer()
 	if (connect_delay_seconds_ == 0)
 		return;
 
-	printf("FILE:%s,FUNCTION:%s,LINE:%d,check_connect_delay_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_delay_seconds_.load());
+	printf("FILE:%s,FUNCTION:%s,LINE:%d,connect_delay_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_delay_seconds_.load());
 
 	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_delay_seconds_));
 	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectDelayTimer, this->shared_from_this(), boost::asio::placeholders::error));
@@ -410,7 +332,7 @@ void TcpSession<TSession>::ExpiresConnectDelayTimer()
 template <typename TSession>
 void TcpSession<TSession>::ExpiresConnectTimeoutTimer()
 {
-	printf("FILE:%s,FUNCTION:%s,LINE:%d,check_connect_delay_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_timeout_seconds_.load());
+	printf("FILE:%s,FUNCTION:%s,LINE:%d,connect_timeout_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_timeout_seconds_.load());
 
 	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_timeout_seconds_));
 	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.async_wait(boost::bind(&TcpSession::HandleConnectTimeoutTimer, this->shared_from_this(), boost::asio::placeholders::error));
@@ -555,18 +477,9 @@ bool TcpSession<TSession>::Send(std::string data)
 
 		if (!write_in_progress)
 		{
-
-			if (speed_bytes_ == 0)
-			{
-				boost::asio::async_write(socket_,
-					boost::asio::buffer(deq_messages_.front()),
-					boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
-			}
-			else
-			{
-				WriteCheckSpeedLimit();
-			}
-
+			boost::asio::async_write(socket_,
+				boost::asio::buffer(deq_messages_.front()),
+				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 		}
 
 		return true;
@@ -728,7 +641,7 @@ void TcpSession<TSession>::HandleReadBody(const boost::system::error_code & ec)
 	{
 		//printf("%s,%d,%d,%s\n", __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 		DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
-}
+	}
 }
 
 
@@ -788,34 +701,18 @@ void TcpSession<TSession>::HandleWrite(const boost::system::error_code & ec)
 	{
 		std::unique_lock<std::mutex>  lc(send_mtx_);
 
-		if (speed_bytes_ == 0)
+
+		deq_messages_.pop_front();
+
+		if (!deq_messages_.empty() && IsConnect())
 		{
-			deq_messages_.pop_front();
-
-			if (!deq_messages_.empty() && IsConnect())
-			{
-				boost::asio::async_write(socket_,
-					boost::asio::buffer(deq_messages_.front()),
-					boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
-			}
+			boost::asio::async_write(socket_,
+				boost::asio::buffer(deq_messages_.front()),
+				boost::bind(&TcpSession::HandleWrite, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 		}
-		else
-		{
-			if (str_send_part_.empty())
-			{
-				auto bytes = deq_messages_.front().size();
-				sent_bytes_ += bytes;
 
-				deq_messages_.pop_front();
 
-			}
-			else
-			{
-				sent_bytes_ += str_send_part_.size();
-			}
 
-			WriteCheckSpeedLimit();
-		}
 	}
 	else
 	{
@@ -885,7 +782,7 @@ void TcpSession<TSession>::DoShutdown(const boost::asio::socket_base::shutdown_t
 
 		CancelConnectDelayAndHeartbeatTimer();
 		CancelRecvTimer();
-		CancelSpeedLimitTimer();
+
 
 		boost::system::error_code	ignored_ec;
 		socket_.shutdown(/*boost::asio::ip::tcp::socket::shutdown_both*/what, ignored_ec);
