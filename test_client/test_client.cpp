@@ -25,7 +25,7 @@ public:
 	{
 		TcpClient::OnConnectFailure(spsession, ec);
 
-		spsession->Connect((boost::asio::ip::tcp::endpoint)spsession->GetRemoteEndpoint(), 10);
+		spsession->Connect((boost::asio::ip::tcp::endpoint)spsession->GetRemoteEndpoint(), 10,1);
 
 	};
 
