@@ -41,7 +41,7 @@ public:
 	void SetConnectFailureCallback(ConnectFailureCallback<TSession> fnconnectfailure);
 
 #ifdef SERVER_HEADER_BODY_MODE
-	void SetMessageLengthCallback(HeaderLengthCallback fnheaderlength, BodyLengthCallback fnbodylength);
+	void SetMessageLengthCallback(HeaderLengthCallback fnheaderlength, BodyLengthCallback<TSession> fnbodylength);
 	void SetMessageCallback(MessageCallback<TSession>  fnmessage);
 
 #else
@@ -163,7 +163,7 @@ private:
 	std::vector<uint8_t> header_;
 	uint32_t header_size_;
 	std::vector<uint8_t> body_;
-	BodyLengthCallback fnbodylength_;
+	BodyLengthCallback<TSession> fnbodylength_;
 	MessageCallback<TSession>  fnmessage_;
 #else
 	DataBuffer  recv_buffer_;
@@ -614,7 +614,7 @@ void TcpSession<TSession>::SetMessageCallback(MessageCallback<TSession> fnmessag
 }
 
 template <typename TSession>
-void TcpSession<TSession>::SetMessageLengthCallback(HeaderLengthCallback fnheaderlength, BodyLengthCallback fnbodylength)
+void TcpSession<TSession>::SetMessageLengthCallback(HeaderLengthCallback fnheaderlength, BodyLengthCallback<TSession> fnbodylength)
 {
 	header_size_ = fnheaderlength();
 	fnbodylength_ = std::move(fnbodylength);
@@ -636,13 +636,7 @@ void TcpSession<TSession>::ReadHeader()
 template <typename TSession>
 void TcpSession<TSession>::ReadBody()
 {
-
-	assert(fnbodylength_ != nullptr);
-
-	size_t size = fnbodylength_(header_);
-	body_.resize(size);
-
-	boost::asio::async_read(socket_, boost::asio::buffer(body_), boost::asio::transfer_at_least(size),
+	boost::asio::async_read(socket_, boost::asio::buffer(body_), boost::asio::transfer_at_least(body_.size()),
 		boost::bind(&TcpSession::HandleReadBody, std::enable_shared_from_this<TSession>::shared_from_this(), boost::asio::placeholders::error));
 
 	ExpiresRecvTimer();
@@ -654,7 +648,18 @@ void TcpSession<TSession>::HandleReadHeader(const boost::system::error_code & ec
 {
 	if (!ec)
 	{
-		ReadBody();
+		assert(fnbodylength_ != nullptr);
+
+		int32_t size = fnbodylength_(std::enable_shared_from_this<TSession>::shared_from_this(),header_);
+		if (size >= 0)
+		{
+			body_.resize(size);
+			ReadBody();
+		}
+		else
+		{
+			DoShutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
+		}
 	}
 	else
 	{

@@ -47,7 +47,7 @@ public:
 
 #ifdef 	  SERVER_HEADER_BODY_MODE
 	virtual uint32_t OnGetHeaderLength() = 0;
-	virtual size_t OnGetBodyLength(std::vector<uint8_t>& header) = 0;
+	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession session_ptr,std::vector<uint8_t>& header) = 0;
 	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
 #else
 	virtual uint32_t OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
