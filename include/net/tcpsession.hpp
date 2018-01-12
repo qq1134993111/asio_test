@@ -551,9 +551,7 @@ bool TcpSession<TSession>::Start()
 				printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
 
 				self->DoShutdown();
-				return false;
 			}
-
 
 		});
 	}
