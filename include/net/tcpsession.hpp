@@ -534,32 +534,85 @@ bool TcpSession<TSession>::Start()
 	}
 	catch (std::exception& e)
 	{
-		//printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
+		printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
 		boost::system::error_code	ignored_ec;
 		socket_.close(ignored_ec);
 		return false;
 	}
 
-
-	assert(fnconnect_ != nullptr);
-	fnconnect_(this->shared_from_this());
-
-	try
+	if (1)
 	{
+		auto self = this->shared_from_this();
+		ios_.post([self]() {
+
+			try
+			{
+				if (self->IsConnect())
+				{
+					assert(self->fnconnect_ != nullptr);
+					self->fnconnect_(self);
+
 #ifdef SERVER_HEADER_BODY_MODE
-		ReadHeader();
+					self->ReadHeader();
+					self->ExpiresHeartbeatTimer();
 #else
-		ReadSome();
-#endif // SERVER_HEADER_BODY_MODE
-		ExpiresHeartbeatTimer();
-	}
-	catch (std::exception& e)
-	{
-		//printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
-		DoShutdown();
-		return false;
+					self->ReadSome();
+					self->ExpiresHeartbeatTimer();
+#endif
+
+				}
+			}
+			catch (std::exception& e)
+			{
+				printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
+				self->DoShutdown();
+				return false;
+			}
+
+
+		});
 	}
 
+	//	try
+	//	{
+	//		assert(fnconnect_ != nullptr);
+	//		fnconnect_(this->shared_from_this());
+	//
+	//		auto self = this->shared_from_this();
+	//
+	//#ifdef SERVER_HEADER_BODY_MODE
+	//
+	//		ios_.post([self]() {
+	//
+	//			if (self->IsConnect())
+	//			{
+	//				self->ReadHeader();
+	//				self->ExpiresHeartbeatTimer();
+	//			}
+	//		});
+	//
+	//
+	//#else
+	//
+	//		ios_.post([self]() {
+	//
+	//			if (self->IsConnect())
+	//			{
+	//				self->ReadSome();
+	//				self->ExpiresHeartbeatTimer();
+	//			}
+	//	});
+	//
+	//#endif // SERVER_HEADER_BODY_MODE
+	//
+	//}
+	//	catch (std::exception& e)
+	//	{
+	//		printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
+	//		DoShutdown();
+	//		return false;
+	//	}
+	//
 
 
 	return true;
