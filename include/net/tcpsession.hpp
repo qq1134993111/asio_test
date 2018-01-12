@@ -189,24 +189,6 @@ uint32_t TcpSession<TSession>::GetRealTimeSpeed()
 	return real_time_speed_;
 }
 
-template <typename TSession>
-void TcpSession<TSession>::HandleSpeedLimitTimer(boost::system::error_code const & ec)
-{
-	if (!ec)
-	{
-		std::unique_lock<std::mutex>  lc(send_mtx_);
-
-		real_time_speed_ = sent_bytes_;
-		printf("Real Time Speed: %d\n", real_time_speed_.load());
-
-		if (sent_bytes_ == speed_bytes_ && !deq_messages_.empty() && IsConnect())
-		{
-			sent_bytes_ = 0;
-			WriteCheckSpeedLimit();
-			ExpiresSpeedLimitTimer();
-		}
-	}
-}
 
 
 template <typename TSession>
@@ -228,9 +210,8 @@ void TcpSession<TSession>::HandleHeartbeatTimer(boost::system::error_code const 
 	//	return;
 	//}
 
-	//if (!socket_.is_open())
-	//	return;
 	printf("FILE:%s,FUNCTION:%s,LINE:%d, %d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+
 	if (!ec)//0 操作成功
 	{
 		if (1)
@@ -261,9 +242,9 @@ void TcpSession<TSession>::HandleConnectDelayTimer(boost::system::error_code con
 	//	return;
 	//}
 
-	//if (!socket_.is_open())
-	//	return;
+	
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+
 	if (!ec)//0 操作成功
 	{
 		DoConnect(remote_endpoint_);
@@ -276,6 +257,7 @@ template <typename TSession>
 void TcpSession<TSession>::HandleConnectTimeoutTimer(boost::system::error_code const & ec)
 {
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
+
 	if (!ec)//0 操作成功
 	{
 		boost::system::error_code	ignored_ec;
@@ -370,6 +352,7 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 	remote_endpoint_ = connect_endpoint;
 	connect_delay_seconds_ = delay_seconds;
 	connect_timeout_seconds_ = connect_timeout_seconds;
+
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,%s:%d,delay_seconds:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_endpoint.address().to_string().c_str(), connect_endpoint.port(), delay_seconds);
 
 	if (connect_delay_seconds_ != 0)
@@ -535,6 +518,7 @@ bool TcpSession<TSession>::Start()
 	catch (std::exception& e)
 	{
 		printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
+
 		boost::system::error_code	ignored_ec;
 		socket_.close(ignored_ec);
 		return false;
@@ -565,6 +549,7 @@ bool TcpSession<TSession>::Start()
 			catch (std::exception& e)
 			{
 				printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
+
 				self->DoShutdown();
 				return false;
 			}
@@ -808,9 +793,6 @@ void TcpSession<TSession>::HandleRecvTimer(boost::system::error_code const & ec)
 	//{
 	//	return;
 	//}
-
-	//if (!socket_.is_open())
-	//	return;
 
 	if (!ec)//0 操作成功
 	{
