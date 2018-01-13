@@ -34,7 +34,7 @@ public:
 	virtual void OnConnect(std::shared_ptr<EchoSession> spsession)
 	{
 		TcpServer::OnConnect(spsession);
-		spsession->SetRecvTimeOut(10, true);
+		spsession->SetRecvTimeOut(10);
 	};
 	virtual int32_t OnMessage(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body)
 	{
