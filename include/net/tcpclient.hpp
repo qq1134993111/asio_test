@@ -41,7 +41,7 @@ public:
 		session_mng_.Remove(spsession->GetSessionID());
 	};
 
-#ifdef 	  SERVER_HEADER_BODY_MODE
+#ifdef 	  SOCKET_HEADER_BODY_MODE
 	virtual uint32_t OnGetHeaderLength() = 0;
 	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession,std::vector<uint8_t>& header) = 0;
 	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
@@ -59,7 +59,7 @@ public:
 
 		new_session->SetConnectFailureCallback(std::bind(&TcpClient::OnConnectFailure, this, std::placeholders::_1, std::placeholders::_2));
 
-#if SERVER_HEADER_BODY_MODE
+#if SOCKET_HEADER_BODY_MODE
 		new_session->SetMessageLengthCallback(std::bind(&TcpClient::OnGetHeaderLength, this), std::bind(&TcpClient::OnGetBodyLength, this, std::placeholders::_1,std::placeholders::_2));
 		new_session->SetMessageCallback(std::bind(&TcpClient::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 #else

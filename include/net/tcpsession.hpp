@@ -25,7 +25,7 @@ public:
 	{
 
 
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 
 #else
 		recv_buffer_.SetCapacitySize(4096);
@@ -40,13 +40,13 @@ public:
 
 	void SetConnectFailureCallback(ConnectFailureCallback<TSession> fnconnectfailure);
 
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 	void SetMessageLengthCallback(HeaderLengthCallback fnheaderlength, BodyLengthCallback<TSession> fnbodylength);
 	void SetMessageCallback(MessageCallback<TSession>  fnmessage);
 
 #else
 	void SetRecvCallback(RecvCallback<TSession> fnrecv);
-#endif // SERVER_HEADER_BODY_MODE
+#endif // SOCKET_HEADER_BODY_MODE
 
 	void SetCloseCallback(CloseCallback<TSession> fnclose);
 
@@ -57,9 +57,6 @@ public:
 	void SetRecvTimeOut(uint32_t check_recv_timeout_seconds, bool immediately = false);
 
 	void SetHeartbeat(std::string strInfo, uint32_t check_heartbeat_timeout_seconds = 0);
-
-	bool SetSendSpeedLimit(uint32_t speed_bytes);
-	uint32_t GetRealTimeSpeed();
 
 	void Shutdown(const boost::asio::socket_base::shutdown_type& what = boost::asio::ip::tcp::socket::shutdown_both, bool post = false);
 
@@ -105,12 +102,7 @@ protected:
 	void HandleConnectTimeoutTimer(boost::system::error_code const & ec);
 	void HandleHeartbeatTimer(boost::system::error_code const & ec);
 
-
-	void ExpiresSpeedLimitTimer();
-	void CancelSpeedLimitTimer();
-	void HandleSpeedLimitTimer(boost::system::error_code const & ec);
-
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 	void ReadHeader();
 	void ReadBody();
 	void HandleReadHeader(const boost::system::error_code & ec);
@@ -118,7 +110,7 @@ protected:
 #else
 	void ReadSome();
 	void HandleReadSome(const boost::system::error_code & ec, std::size_t bytes_transferred);
-#endif // SERVER_HEADER_BODY_MODE
+#endif // SOCKET_HEADER_BODY_MODE
 
 protected:
 	enum class SessionStatus :uint8_t
@@ -159,7 +151,7 @@ private:
 	ConnectFailureCallback<TSession> fnconnectfailure_;
 	ConnectCallback<TSession>  fnconnect_;
 
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 	std::vector<uint8_t> header_;
 	uint32_t header_size_;
 	std::vector<uint8_t> body_;
@@ -168,7 +160,7 @@ private:
 #else
 	DataBuffer  recv_buffer_;
 	RecvCallback<TSession>   fnrecv_;
-#endif // SERVER_HEADER_BODY_MODE
+#endif // SOCKET_HEADER_BODY_MODE
 
 	std::deque<std::string> deq_messages_;
 	std::mutex send_mtx_;
@@ -182,23 +174,6 @@ private:
 
 
 
-
-template <typename TSession>
-uint32_t TcpSession<TSession>::GetRealTimeSpeed()
-{
-	return real_time_speed_;
-}
-
-
-
-template <typename TSession>
-void TcpSession<TSession>::ExpiresSpeedLimitTimer()
-{
-	printf("FILE:%s,FUNCTION:%s,LINE:%d\n", __FILE__, __FUNCTION__, __LINE__);
-
-	check_speed_limit_timer_.expires_from_now(std::chrono::seconds(1));
-	check_speed_limit_timer_.async_wait(boost::bind(&TcpSession::HandleSpeedLimitTimer, this->shared_from_this(), boost::asio::placeholders::error));
-}
 
 
 
@@ -536,7 +511,7 @@ bool TcpSession<TSession>::Start()
 					assert(self->fnconnect_ != nullptr);
 					self->fnconnect_(self);
 
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 					self->ReadHeader();
 					self->ExpiresHeartbeatTimer();
 #else
@@ -563,7 +538,7 @@ bool TcpSession<TSession>::Start()
 	//
 	//		auto self = this->shared_from_this();
 	//
-	//#ifdef SERVER_HEADER_BODY_MODE
+	//#ifdef SOCKET_HEADER_BODY_MODE
 	//
 	//		ios_.post([self]() {
 	//
@@ -586,7 +561,7 @@ bool TcpSession<TSession>::Start()
 	//			}
 	//	});
 	//
-	//#endif // SERVER_HEADER_BODY_MODE
+	//#endif // SOCKET_HEADER_BODY_MODE
 	//
 	//}
 	//	catch (std::exception& e)
@@ -603,7 +578,7 @@ bool TcpSession<TSession>::Start()
 
 
 
-#ifdef SERVER_HEADER_BODY_MODE
+#ifdef SOCKET_HEADER_BODY_MODE
 
 template <typename TSession>
 void TcpSession<TSession>::SetMessageCallback(MessageCallback<TSession> fnmessage)
@@ -729,7 +704,7 @@ void TcpSession<TSession>::ReadSome()
 	ExpiresRecvTimer();
 }
 
-#endif // SERVER_HEADER_BODY_MODE
+#endif // SOCKET_HEADER_BODY_MODE
 
 
 

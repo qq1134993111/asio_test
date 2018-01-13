@@ -45,7 +45,7 @@ public:
 		return false;
 	}
 
-#ifdef 	  SERVER_HEADER_BODY_MODE
+#ifdef 	  SOCKET_HEADER_BODY_MODE
 	virtual uint32_t OnGetHeaderLength() = 0;
 	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession session_ptr,std::vector<uint8_t>& header) = 0;
 	virtual void OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
@@ -107,7 +107,7 @@ void TcpServer<TSession >::DoAccept()
 		{
 			session_mng_.Insert(new_session);
 
-#ifdef 	   SERVER_HEADER_BODY_MODE
+#ifdef 	   SOCKET_HEADER_BODY_MODE
 			new_session->SetMessageLengthCallback(std::bind(&TcpServer::OnGetHeaderLength, this), std::bind(&TcpServer::OnGetBodyLength, this, std::placeholders::_1));
 			new_session->SetMessageCallback(std::bind(&TcpServer::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 #else
