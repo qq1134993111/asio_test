@@ -28,5 +28,5 @@ template <typename TSession>
 using BodyLengthCallback = std::function<int32_t(TcpSessionPtr<TSession> session_ptr,std::vector<uint8_t>& header)>;
 
 template <typename TSession>
-using MessageCallback = std::function<void(TcpSessionPtr<TSession> session_ptr, std::vector<uint8_t>& header, std::vector<uint8_t>& body)>;
+using MessageCallback = std::function<int32_t(TcpSessionPtr<TSession> session_ptr, std::vector<uint8_t>& header, std::vector<uint8_t>& body)>;
 

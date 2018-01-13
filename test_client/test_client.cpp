@@ -64,13 +64,15 @@ public:
 		return 10;
 	}
 
-	virtual void OnMessage(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body)
+	virtual int32_t OnMessage(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body)
 	{
 		printf("FILE:%s,FUNCTION:%s,LINE:%d,SessionID:%lld,Local:%s:%d,Remote:%s:%d,%s%s\n", __FILE__, __FUNCTION__, __LINE__, spsession->GetSessionID(), \
 			spsession->GetLocalEndpoint().address().to_string().c_str(), spsession->GetLocalEndpoint().port(),
 			spsession->GetRemoteEndpoint().address().to_string().c_str(), spsession->GetRemoteEndpoint().port(),
 			header.data(), body.data()
 		);
+
+		return 0;
 	}
 };
 

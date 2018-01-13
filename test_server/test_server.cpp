@@ -36,7 +36,7 @@ public:
 		TcpServer::OnConnect(spsession);
 		spsession->SetRecvTimeOut(10, true);
 	};
-	virtual void OnMessage(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body)
+	virtual int32_t OnMessage(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body)
 	{
 		//printf("header:%s\n", std::string(header.begin(), header.end()).c_str());
 		//printf("body:%s\n", std::string(body.begin(), body.end()).c_str());
@@ -54,6 +54,8 @@ public:
 			//this->TcpSend(spsession->GetSessionID(), std::string(header.begin(), header.end()));
 			//this->TcpSend(spsession->GetSessionID(), std::string(body.begin(), body.end()));
 		}
+
+		return 0;
 	}
 
 	virtual uint32_t OnRecv(std::shared_ptr<EchoSession> spsession, DataBuffer& recv_data)
