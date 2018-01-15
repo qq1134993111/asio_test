@@ -515,6 +515,8 @@ bool TcpSession<TSession>::Start()
 		SetSocketNoDelay();
 		local_endpoint_ = socket_.local_endpoint();
 		remote_endpoint_ = socket_.remote_endpoint();
+		
+		CancelConnectDelayAndHeartbeatTimer();
 	}
 	catch (std::exception& e)
 	{
