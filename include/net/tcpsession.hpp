@@ -105,7 +105,7 @@ protected:
 	void ExpiresConnectDelayTimer();
 	void ExpiresConnectTimeoutTimer();
 	void ExpiresHeartbeatTimer();
-	void CancelConnectDelayAndHeartbeatTimer();
+	void CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
 	void HandleConnectDelayTimer(boost::system::error_code const & ec);
 	void HandleConnectTimeoutTimer(boost::system::error_code const & ec);
 	void HandleHeartbeatTimer(boost::system::error_code const & ec);
@@ -249,7 +249,7 @@ void TcpSession<TSession>::HandleConnectTimeoutTimer(boost::system::error_code c
 }
 
 template <typename TSession>
-void TcpSession<TSession>::CancelConnectDelayAndHeartbeatTimer()
+void TcpSession<TSession>::CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer()
 {
 	boost::system::error_code	ignored_ec;
 	size_t				size = check_connect_delay_and_connect_timeout_and_heartbeat_timer_.cancel(ignored_ec);
@@ -291,6 +291,9 @@ void TcpSession<TSession>::ExpiresConnectDelayTimer()
 template <typename TSession>
 void TcpSession<TSession>::ExpiresConnectTimeoutTimer()
 {
+	if (connect_timeout_seconds_ == 0)
+		return;
+
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,connect_timeout_seconds_:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_timeout_seconds_.load());
 
 	check_connect_delay_and_connect_timeout_and_heartbeat_timer_.expires_from_now(std::chrono::seconds(connect_timeout_seconds_));
@@ -374,10 +377,9 @@ void TcpSession<TSession>::DoConnect(boost::asio::ip::tcp::endpoint & connect_en
 	socket_.async_connect(connect_endpoint,
 		boost::bind(&TcpSession::HandleConnect, this->shared_from_this(), boost::asio::placeholders::error));
 
-	if (connect_timeout_seconds_ != 0)
-	{
-		ExpiresConnectTimeoutTimer();
-	}
+
+	ExpiresConnectTimeoutTimer();
+	
 
 }
 
@@ -413,7 +415,7 @@ void TcpSession<TSession>::DoSetHeartbeat(std::string strInfo, uint32_t heartbea
 		}
 		else
 		{
-			CancelConnectDelayAndHeartbeatTimer();
+			CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
 		}
 	}
 }
@@ -516,7 +518,7 @@ bool TcpSession<TSession>::Start()
 		local_endpoint_ = socket_.local_endpoint();
 		remote_endpoint_ = socket_.remote_endpoint();
 		
-		CancelConnectDelayAndHeartbeatTimer();
+		CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
 	}
 	catch (std::exception& e)
 	{
@@ -821,7 +823,7 @@ void TcpSession<TSession>::DoShutdown(const boost::asio::socket_base::shutdown_t
 	{
 		status_ = SessionStatus::kShuttingdown;
 
-		CancelConnectDelayAndHeartbeatTimer();
+		CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
 		CancelRecvTimer();
 
 
