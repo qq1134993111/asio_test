@@ -12,7 +12,7 @@ public:
 	{
 		is_running_ = false;
 	}
-	~TcpClient() {};
+	virtual ~TcpClient() {};
 
 	virtual void OnConnectFailure(std::shared_ptr<TSession> spsession, boost::system::error_code const& ec)
 	{

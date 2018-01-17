@@ -38,7 +38,7 @@ public:
 		recv_buffer_.SetCapacitySize(kRecvBufferSize);
 #endif
 	}
-	~TcpSession();
+	virtual ~TcpSession();
 
 
 public:
