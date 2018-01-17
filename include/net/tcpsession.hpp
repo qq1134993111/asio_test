@@ -44,6 +44,7 @@ public:
 public:
 
 	bool Send(std::string data);
+	std::deque<std::string> ClearSendQueue();
 
 	void SetRecvTimeOut(uint32_t check_recv_timeout_seconds);
 
@@ -86,16 +87,7 @@ protected:
 
 	void SetCloseCallback(CloseCallback<TSession> fnclose);
 
-	std::deque<std::string> ClearSendQueue()
-	{
-		std::unique_lock<std::mutex>  lc(send_mtx_);
-		if (!IsConnect())
-		{
-			return std::move(deq_messages_);
-		}
 
-		return {};
-	}
 protected:
 	void SetSocketNoDelay();
 
@@ -190,6 +182,17 @@ private:
 	CloseCallback<TSession> fnclose_;
 };
 
+template <typename TSession>
+std::deque<std::string> TcpSession<TSession>::ClearSendQueue()
+{
+	std::unique_lock<std::mutex>  lc(send_mtx_);
+	if (!IsConnect())
+	{
+		return std::move(deq_messages_);
+	}
+
+	return {};
+}
 
 
 

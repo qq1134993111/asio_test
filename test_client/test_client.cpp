@@ -13,6 +13,7 @@ public:
 	{
 		printf("%s\n", __FUNCTION__);
 	}
+
 };
 
 class MyClient :public TcpClient<EchoSession>
@@ -39,6 +40,7 @@ public:
 	{
 		TcpClient::OnClose(spsession, ec);
 
+		spsession->ClearSendQueue();
 		Connect(spsession, spsession->GetRemoteEndpoint(), 10);
 	};
 
