@@ -115,7 +115,7 @@ public:
 	}
 
 protected:
-	void Connect(std::shared_ptr<TSession> spsession, std::string ip, uint16_t port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
+	/*void Connect(std::shared_ptr<TSession> spsession, std::string ip, uint16_t port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
 	{
 		spsession->Connect(ip, port, delay_seconds, connect_timeout_seconds);
 	}
@@ -123,7 +123,7 @@ protected:
 	void Connect(std::shared_ptr<TSession> spsession, boost::asio::ip::tcp::endpoint connect_endpoint, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
 	{
 		spsession->Connect(connect_endpoint, delay_seconds, connect_timeout_seconds);
-	}
+	}*/
 
 protected:
 	boost::asio::io_service ios_;

@@ -35,7 +35,7 @@ public:
 #ifdef SOCKET_HEADER_BODY_MODE
 
 #else
-		recv_buffer_.SetCapacitySize(4096);
+		recv_buffer_.SetCapacitySize(kRecvBufferSize);
 #endif
 	}
 	~TcpSession();
@@ -44,7 +44,6 @@ public:
 public:
 
 	bool Send(std::string data);
-	std::deque<std::string> ClearSendQueue();
 
 	void SetRecvTimeOut(uint32_t check_recv_timeout_seconds);
 
@@ -182,17 +181,7 @@ private:
 	CloseCallback<TSession> fnclose_;
 };
 
-template <typename TSession>
-std::deque<std::string> TcpSession<TSession>::ClearSendQueue()
-{
-	std::unique_lock<std::mutex>  lc(send_mtx_);
-	if (!IsConnect())
-	{
-		return std::move(deq_messages_);
-	}
 
-	return {};
-}
 
 
 
@@ -344,7 +333,7 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 
 	auto self(this->shared_from_this());
 
-	auto func = [&, self]() {
+	auto func = [=]() {
 
 		if (socket_.is_open())
 		{
@@ -364,7 +353,7 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 		}
 		else
 		{
-			self->DoConnect(connect_endpoint);
+			self->DoConnect(self->remote_endpoint_);
 		}
 
 	};
@@ -532,6 +521,9 @@ bool TcpSession<TSession>::Start()
 		remote_endpoint_ = socket_.remote_endpoint();
 
 		CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
+
+		//std::unique_lock<decltype(send_mtx_)> lc(send_mtx_);
+		//deq_messages_.clear();
 	}
 	catch (std::exception& e)
 	{

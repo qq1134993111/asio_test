@@ -6,6 +6,7 @@
 #include "boost/filesystem.hpp"
 #include "buffer/databuffer.hpp"
 
+const uint32_t kRecvBufferSize = 4096;
 
 template <typename TSession>
 using  TcpSessionPtr = std::shared_ptr<TSession>;

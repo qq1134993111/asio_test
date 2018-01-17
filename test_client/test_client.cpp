@@ -26,22 +26,26 @@ public:
 	{
 		TcpClient::OnConnectFailure(spsession, ec);
 
-		Connect(spsession, spsession->GetRemoteEndpoint().address().to_string(), spsession->GetRemoteEndpoint().port(), 10, 1);
-
+		//Connect(spsession, spsession->GetRemoteEndpoint().address().to_string(), spsession->GetRemoteEndpoint().port(), 10, 1);
+		auto endpoint = spsession->GetRemoteEndpoint();
+		Connect(endpoint.address().to_string(), endpoint.port(), 10,1);
 	};
 
 	virtual void OnConnect(std::shared_ptr<EchoSession> spsession)
 	{
 		TcpClient::OnConnect(spsession);
 
+		spsession->SetRecvTimeOut(15);
 		spsession->SetHeartbeat("Heartbeat", 3);
 	};
 	virtual void OnClose(std::shared_ptr<EchoSession> spsession, boost::system::error_code const& ec)
 	{
 		TcpClient::OnClose(spsession, ec);
 
-		spsession->ClearSendQueue();
-		Connect(spsession, spsession->GetRemoteEndpoint(), 10);
+		//spsession->ClearSendQueue();
+		//Connect(spsession, spsession->GetRemoteEndpoint(), 10);
+		auto endpoint = spsession->GetRemoteEndpoint();
+		Connect(endpoint.address().to_string(),endpoint.port(), 10,1);
 	};
 
 	virtual uint32_t OnRecv(std::shared_ptr<EchoSession> spsession, DataBuffer& recv_data)
@@ -85,8 +89,9 @@ int main()
 	MyClient client;
 	client.Run();
 
-	//client.Connect("127.0.0.1", 8088,10,3);
-	client.Connect("10.172.35.10", 8088, 10, 1);
+	client.Connect("127.0.0.1", 8088,10,3);
+
+	//client.Connect("10.172.35.10", 8088, 10, 1);
 	while (client.IsRunning())
 	{
 		std::chrono::milliseconds dura(2000);
