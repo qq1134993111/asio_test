@@ -62,12 +62,14 @@ public:
 	const boost::asio::ip::tcp::endpoint& GetLocalEndpoint() const { return local_endpoint_; }
 	const boost::asio::ip::tcp::endpoint& GetRemoteEndpoint() const { return remote_endpoint_; }
 
-	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
-	bool Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
+
 
 protected:
 	friend class TcpServer<TSession>;
 	friend class TcpClient<TSession>;
+
+	bool Connect(const std::string &ip, unsigned short port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
+	bool Connect(boost::asio::ip::tcp::endpoint & connect_endpoint, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0);
 
 	bool Start();
 
@@ -225,7 +227,7 @@ void TcpSession<TSession>::HandleConnectDelayTimer(boost::system::error_code con
 	//	return;
 	//}
 
-	
+
 	printf("FILE:%s,FUNCTION:%s,LINE:%d,%d,%s\n", __FILE__, __FUNCTION__, __LINE__, ec.value(), boost::system::system_error(ec).what());
 
 	if (!ec)//0 操作成功
@@ -331,8 +333,8 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 
 	auto self(this->shared_from_this());
 
-	auto func = [&,self]() {
-	
+	auto func = [&, self]() {
+
 		if (socket_.is_open())
 		{
 			boost::system::error_code	ignored_ec;
@@ -379,7 +381,7 @@ void TcpSession<TSession>::DoConnect(boost::asio::ip::tcp::endpoint & connect_en
 
 
 	ExpiresConnectTimeoutTimer();
-	
+
 
 }
 
@@ -431,7 +433,7 @@ void TcpSession<TSession>::SetRecvTimeOut(uint32_t check_recv_timeout_seconds)
 {
 	auto self(this->shared_from_this());
 
-	auto func= [self, check_recv_timeout_seconds]() {
+	auto func = [self, check_recv_timeout_seconds]() {
 		if (self->IsConnect())
 		{
 			self->recv_timeout_seconds_ = check_recv_timeout_seconds;
@@ -517,7 +519,7 @@ bool TcpSession<TSession>::Start()
 		SetSocketNoDelay();
 		local_endpoint_ = socket_.local_endpoint();
 		remote_endpoint_ = socket_.remote_endpoint();
-		
+
 		CancelConnectDelayAndConnectTimeoutAndHeartbeatTimer();
 	}
 	catch (std::exception& e)
@@ -653,7 +655,7 @@ void TcpSession<TSession>::HandleReadHeader(const boost::system::error_code & ec
 	{
 		assert(fnbodylength_ != nullptr);
 
-		int32_t size = fnbodylength_(std::enable_shared_from_this<TSession>::shared_from_this(),header_);
+		int32_t size = fnbodylength_(std::enable_shared_from_this<TSession>::shared_from_this(), header_);
 		if (size >= 0)
 		{
 			body_.resize(size);

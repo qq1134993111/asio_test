@@ -43,7 +43,7 @@ public:
 
 #ifdef 	  SOCKET_HEADER_BODY_MODE
 	virtual uint32_t OnGetHeaderLength() = 0;
-	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession,std::vector<uint8_t>& header) = 0;
+	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header) = 0;
 	virtual int32_t OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
 #else
 	virtual uint32_t OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
@@ -60,7 +60,7 @@ public:
 		new_session->SetConnectFailureCallback(std::bind(&TcpClient::OnConnectFailure, this, std::placeholders::_1, std::placeholders::_2));
 
 #if SOCKET_HEADER_BODY_MODE
-		new_session->SetMessageLengthCallback(std::bind(&TcpClient::OnGetHeaderLength, this), std::bind(&TcpClient::OnGetBodyLength, this, std::placeholders::_1,std::placeholders::_2));
+		new_session->SetMessageLengthCallback(std::bind(&TcpClient::OnGetHeaderLength, this), std::bind(&TcpClient::OnGetBodyLength, this, std::placeholders::_1, std::placeholders::_2));
 		new_session->SetMessageCallback(std::bind(&TcpClient::OnMessage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 #else
 		new_session->SetRecvCallback(std::bind(&TcpClient::OnRecv, this, std::placeholders::_1, std::placeholders::_2));
@@ -112,6 +112,17 @@ public:
 	bool IsRunning()
 	{
 		return is_running_;
+	}
+
+protected:
+	void Connect(std::shared_ptr<TSession> spsession, std::string ip, uint16_t port, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
+	{
+		spsession->Connect(ip, port, delay_seconds, connect_timeout_seconds);
+	}
+
+	void Connect(std::shared_ptr<TSession> spsession, boost::asio::ip::tcp::endpoint connect_endpoint, uint32_t delay_seconds = 0, uint32_t connect_timeout_seconds = 0)
+	{
+		spsession->Connect(connect_endpoint, delay_seconds, connect_timeout_seconds);
 	}
 
 protected:

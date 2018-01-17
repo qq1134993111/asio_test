@@ -25,7 +25,7 @@ public:
 	{
 		TcpClient::OnConnectFailure(spsession, ec);
 
-		spsession->Connect((boost::asio::ip::tcp::endpoint)spsession->GetRemoteEndpoint(), 10,1);
+		Connect(spsession, spsession->GetRemoteEndpoint().address().to_string(), spsession->GetRemoteEndpoint().port(), 10, 1);
 
 	};
 
@@ -39,7 +39,7 @@ public:
 	{
 		TcpClient::OnClose(spsession, ec);
 
-		spsession->Connect((boost::asio::ip::tcp::endpoint)spsession->GetRemoteEndpoint(), 10);
+		Connect(spsession, spsession->GetRemoteEndpoint(), 10);
 	};
 
 	virtual uint32_t OnRecv(std::shared_ptr<EchoSession> spsession, DataBuffer& recv_data)
@@ -59,7 +59,7 @@ public:
 	{
 		return 10;
 	};
-	virtual int32_t OnGetBodyLength(std::shared_ptr<EchoSession> spsession,std::vector<uint8_t>& header)
+	virtual int32_t OnGetBodyLength(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header)
 	{
 		return 10;
 	}

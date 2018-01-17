@@ -47,7 +47,7 @@ public:
 
 #ifdef 	  SOCKET_HEADER_BODY_MODE
 	virtual uint32_t OnGetHeaderLength() = 0;
-	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession session_ptr,std::vector<uint8_t>& header) = 0;
+	virtual int32_t OnGetBodyLength(std::shared_ptr<TSession> spsession session_ptr, std::vector<uint8_t>& header) = 0;
 	virtual int32_t OnMessage(std::shared_ptr<TSession> spsession, std::vector<uint8_t>& header, std::vector<uint8_t>& body) = 0;
 #else
 	virtual uint32_t OnRecv(std::shared_ptr<TSession> spsession, DataBuffer& recv_data) = 0;
@@ -99,6 +99,7 @@ template <typename TSession>
 void TcpServer<TSession >::DoAccept()
 {
 	auto new_session = std::make_shared<TSession>(ios_pool_.GetIoService(), ++id_);
+
 
 	acceptor_.async_accept(new_session->GetSocket(),
 		[this, new_session](boost::system::error_code const& error)

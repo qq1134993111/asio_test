@@ -27,7 +27,7 @@ public:
 	{
 		return 10;
 	};
-	virtual int32_t OnGetBodyLength(std::shared_ptr<EchoSession> spsession,std::vector<uint8_t>& header)
+	virtual int32_t OnGetBodyLength(std::shared_ptr<EchoSession> spsession, std::vector<uint8_t>& header)
 	{
 		return 100;
 	}
