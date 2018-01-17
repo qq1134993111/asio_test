@@ -63,7 +63,6 @@ public:
 	const boost::asio::ip::tcp::endpoint& GetRemoteEndpoint() const { return remote_endpoint_; }
 
 
-
 protected:
 	friend class TcpServer<TSession>;
 	friend class TcpClient<TSession>;
@@ -87,7 +86,16 @@ protected:
 
 	void SetCloseCallback(CloseCallback<TSession> fnclose);
 
+	std::deque<std::string> ClearSendQueue()
+	{
+		std::unique_lock<std::mutex>  lc(send_mtx_);
+		if (!IsConnect())
+		{
+			return std::move(deq_messages_);
+		}
 
+		return {};
+	}
 protected:
 	void SetSocketNoDelay();
 
@@ -551,8 +559,8 @@ bool TcpSession<TSession>::Start()
 					self->ExpiresHeartbeatTimer();
 #endif
 
-				}
 			}
+		}
 			catch (std::exception& e)
 			{
 				printf("%s,%d,%s\n", __FUNCTION__, __LINE__, e.what());
@@ -560,8 +568,8 @@ bool TcpSession<TSession>::Start()
 				self->DoShutdown();
 			}
 
-		});
-	}
+	});
+}
 
 	//	try
 	//	{
@@ -834,8 +842,9 @@ void TcpSession<TSession>::DoShutdown(const boost::asio::socket_base::shutdown_t
 
 		//socket_.close(ignored_ec);
 
-		assert(fnclose_ != nullptr);
+		lc.unlock();
 
+		assert(fnclose_ != nullptr);
 		fnclose_(std::enable_shared_from_this<TSession>::shared_from_this(), ec);
 	}
 }
