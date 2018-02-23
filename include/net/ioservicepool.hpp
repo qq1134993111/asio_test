@@ -2,7 +2,8 @@
 #include <memory>
 #include <thread>
 #include <exception>
-#include<list>
+#include <list>
+#include <algorithm>
 #include "boost/noncopyable.hpp"
 #include "boost/asio.hpp"
 #include "boost/thread.hpp"
@@ -62,7 +63,7 @@ public:
 	using iterator = std::list<IosWorker>::iterator;
 public:
 	explicit IoServicePool(size_t pool_size = std::thread::hardware_concurrency())
-		: ios_workers_(pool_size)
+		: ios_workers_(std::max(pool_size,(size_t)1))
 		, next_io_service_(ios_workers_.begin())
 	{
 	}
