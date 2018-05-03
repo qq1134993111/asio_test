@@ -333,7 +333,7 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 
 	auto self(this->shared_from_this());
 
-	auto func = [=]() {
+	auto func = [self,this,=]() {
 
 		if (socket_.is_open())
 		{
@@ -341,19 +341,19 @@ bool TcpSession<TSession>::Connect(boost::asio::ip::tcp::endpoint & connect_endp
 			socket_.close(ignored_ec);
 		}
 
-		self->remote_endpoint_ = connect_endpoint;
-		self->connect_delay_seconds_ = delay_seconds;
-		self->connect_timeout_seconds_ = connect_timeout_seconds;
+		remote_endpoint_ = connect_endpoint;
+		connect_delay_seconds_ = delay_seconds;
+		connect_timeout_seconds_ = connect_timeout_seconds;
 
 		printf("FILE:%s,FUNCTION:%s,LINE:%d,%s:%d,delay_seconds:%d\n", __FILE__, __FUNCTION__, __LINE__, connect_endpoint.address().to_string().c_str(), connect_endpoint.port(), delay_seconds);
 
-		if (self->connect_delay_seconds_ != 0)
+		if (connect_delay_seconds_ != 0)
 		{
-			self->ExpiresConnectDelayTimer();
+			ExpiresConnectDelayTimer();
 		}
 		else
 		{
-			self->DoConnect(self->remote_endpoint_);
+			DoConnect(self->remote_endpoint_);
 		}
 
 	};
@@ -433,17 +433,17 @@ void TcpSession<TSession>::SetRecvTimeOut(uint32_t check_recv_timeout_seconds)
 {
 	auto self(this->shared_from_this());
 
-	auto func = [self, check_recv_timeout_seconds]() {
+	auto func = [self,this, check_recv_timeout_seconds]() {
 		if (self->IsConnect())
 		{
-			self->recv_timeout_seconds_ = check_recv_timeout_seconds;
+			recv_timeout_seconds_ = check_recv_timeout_seconds;
 
-			if (self->recv_timeout_seconds_ == 0)
+			if (recv_timeout_seconds_ == 0)
 			{
-				self->CancelRecvTimer();
+				CancelRecvTimer();
 			}
 
-			self->ExpiresRecvTimer();
+			ExpiresRecvTimer();
 		}
 	};
 
