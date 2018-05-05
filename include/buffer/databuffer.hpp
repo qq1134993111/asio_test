@@ -19,8 +19,10 @@ public:
 	{
 		if (copy_data_)
 		{
+			bufeer_ = nullptr;
 			capacity_ = size;
 			r_pos_ = 0;
+			w_pos_ = 0;
 			ExtendTo(capacity_);
 			Write(data, size);
 			w_pos_ = write_pos_to_end ? size : 0;
